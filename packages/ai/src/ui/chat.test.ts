@@ -1868,10 +1868,10 @@ describe('Chat', () => {
                   "type": "step-start",
                 },
                 {
+                  "errorText": "test-error",
                   "input": {
                     "testArg": "test-value",
                   },
-                  "errorText": "test-error",
                   "state": "output-error",
                   "toolCallId": "tool-call-0",
                   "type": "tool-test-tool",

@@ -18,6 +18,7 @@ import {
 import {
   InferUIMessageToolCall,
   isToolOrDynamicToolUIPart,
+  ToolUIPart,
   type DataUIPart,
   type FileUIPart,
   type InferUIMessageData,
@@ -413,42 +414,28 @@ export abstract class AbstractChat<UI_MESSAGE extends UIMessage> {
     }
   };
 
-  addToolResult = async <TOOL extends keyof InferUIMessageTools<UI_MESSAGE>>(
-    options:
-      | {
-          // maintain backwards compatibility
-          state?: never;
-          tool: TOOL;
-          toolCallId: string;
-          output: InferUIMessageTools<UI_MESSAGE>[TOOL]['output'];
-        }
-      | {
-          state: 'output-available';
-          tool: TOOL;
-          toolCallId: string;
-          output: InferUIMessageTools<UI_MESSAGE>[TOOL]['output'];
-        }
-      | {
-          state: 'output-error';
-          tool: TOOL;
-          toolCallId: string;
-          errorText: string;
-        },
-  ) =>
+  addToolResult = async <TOOL extends keyof InferUIMessageTools<UI_MESSAGE>>({
+    state = 'output-available',
+    tool,
+    toolCallId,
+    output,
+    errorText,
+  }:
+    | {
+        state?: 'output-available';
+        tool: TOOL;
+        toolCallId: string;
+        output: InferUIMessageTools<UI_MESSAGE>[TOOL]['output'];
+        errorText?: never;
+      }
+    | {
+        state: 'output-error';
+        tool: TOOL;
+        toolCallId: string;
+        output?: never;
+        errorText: string;
+      }) =>
     this.jobExecutor.run(async () => {
-      // destructure the inputs to fill in state on the fallback
-      const {
-        tool: _,
-        toolCallId,
-        ...result
-      } = {
-        ...options,
-        state: options.state ?? 'output-available',
-      } as Extract<
-        typeof options,
-        { state: 'output-available' } | { state: 'output-error' }
-      >;
-
       const messages = this.state.messages;
       const lastMessage = messages[messages.length - 1];
 
@@ -456,7 +443,7 @@ export abstract class AbstractChat<UI_MESSAGE extends UIMessage> {
         ...lastMessage,
         parts: lastMessage.parts.map(part =>
           isToolOrDynamicToolUIPart(part) && part.toolCallId === toolCallId
-            ? { ...part, ...result }
+            ? { ...part, state, output, errorText }
             : part,
         ),
       });
@@ -466,12 +453,12 @@ export abstract class AbstractChat<UI_MESSAGE extends UIMessage> {
         this.activeResponse.state.message.parts =
           this.activeResponse.state.message.parts.map(part =>
             isToolOrDynamicToolUIPart(part) && part.toolCallId === toolCallId
-              ? {
+              ? ({
                   ...part,
-                  output: undefined,
-                  errorText: undefined,
-                  ...result,
-                }
+                  state,
+                  output,
+                  errorText,
+                } as ToolUIPart<InferUIMessageTools<UI_MESSAGE>>)
               : part,
           );
       }

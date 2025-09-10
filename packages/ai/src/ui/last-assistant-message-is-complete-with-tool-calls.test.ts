@@ -167,7 +167,7 @@ describe('lastAssistantMessageIsCompleteWithToolCalls', () => {
     ).toBe(false);
   });
 
-  it('should return false when dynamic tool call has an error', () => {
+  it('should return true when dynamic tool call has an error', () => {
     expect(
       lastAssistantMessageIsCompleteWithToolCalls({
         messages: [
@@ -190,7 +190,7 @@ describe('lastAssistantMessageIsCompleteWithToolCalls', () => {
           },
         ],
       }),
-    ).toBe(false);
+    ).toBe(true);
   });
 
   it('should return true when mixing regular and dynamic tool calls and all are complete', () => {
